@@ -9,5 +9,8 @@ if (environment.production) {
   enableProdMode();
 }
 
+Cesium.buildModuleUrl.setBaseUrl('/assets/cesium/');
+//Cesium.Ion.defaultAccessToken="";
+
 platformBrowserDynamic().bootstrapModule(AppModule)
   .catch(err => console.error(err));

@@ -30,3 +30,10 @@ $alpenblick-theme: mat-light-theme($alpenblick-primary, $alpenblick-accent, $alp
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+.map-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}

@@ -8,8 +8,6 @@ import { ViewerConfiguration } from 'angular-cesium';
   providers: [ViewerConfiguration]
 })
 export class AppComponent {
-  title = 'alpenblick';
-
   constructor(private viewerConf: ViewerConfiguration) {
     this.viewerConf.viewerOptions = {
       animation: false,

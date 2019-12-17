@@ -1,6 +1,10 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  OnInit
+} from '@angular/core';
 import {
   CameraService,
   CesiumEvent,
@@ -8,6 +12,7 @@ import {
   MapEventsManagerService,
   MapsManagerService
 } from 'angular-cesium';
+import { DefaultContext, interpret, Machine } from 'xstate';
 
 interface GeoJsonFeature {
   type: 'Feature';
@@ -23,23 +28,98 @@ interface GeoJson {
   features: GeoJsonFeature[];
 }
 
+//#region XState
+interface ViewpointStateSchema {
+  states: {
+    exploring: {};
+    checkingViewpoint: {};
+    viewing: {};
+  };
+}
+
+class ViewpointEventView {
+  type = 'VIEW';
+}
+
+class ViewpointEventExplore {
+  type = 'EXPLORE';
+}
+
+type ViewpointEvent = ViewpointEventView | ViewpointEventExplore;
+
+type ViewpointContext = DefaultContext;
+//#endregion
+
 @Component({
   selector: 'app-viewpoint',
   templateUrl: './viewpoint.component.html',
   styleUrls: ['./viewpoint.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ViewpointComponent implements OnInit {
+export class ViewpointComponent implements OnInit, OnDestroy {
+  private readonly stateMachine = Machine<
+    ViewpointContext,
+    ViewpointStateSchema,
+    ViewpointEvent
+  >(
+    {
+      id: 'viewpoint',
+      initial: 'exploring',
+      states: {
+        exploring: {
+          on: {
+            VIEW: 'checkingViewpoint'
+          }
+        },
+        checkingViewpoint: {
+          invoke: {
+            id: 'checkViewpoint',
+            src: (ctx, event) => this.onCheckViewpoint(ctx, event),
+            onDone: {
+              target: 'viewing'
+              // actions: ['log']
+            },
+            onError: {
+              target: 'exploring'
+              // actions: ['log']
+            }
+          }
+        },
+        viewing: {
+          on: {
+            EXPLORE: 'exploring'
+          }
+        }
+      }
+    }
+    // {
+    //   actions: {
+    //     log: (ctx, event) => {
+    //       console.log('    ACTION', ctx, event);
+    //     }
+    //   }
+    // }
+  );
   private summits: GeoJson;
+  public stateService = interpret(this.stateMachine)
+    .onTransition(state => console.log('   TRANSITION: ' + state.value))
+    .start();
+
+  // state$ = from(this.stateMachineService);
 
   constructor(
-    private snackbar: MatSnackBar,
+    // private snackbar: MatSnackBar,
     private eventManager: MapEventsManagerService,
     private coordinateConverter: CoordinateConverter,
     private cameraService: CameraService,
     private mapsManagerService: MapsManagerService,
     private http: HttpClient
   ) {}
+
+  private onCheckViewpoint(ctx, event) {
+    console.log('should check viewpoint location');
+    return Promise.resolve();
+  }
 
   async ngOnInit() {
     this.summits = await this.http
@@ -48,7 +128,8 @@ export class ViewpointComponent implements OnInit {
 
     console.log('summits', this.summits);
 
-    const viewer = this.mapsManagerService.getMap().getCesiumViewer();
+    const mapComponent = this.mapsManagerService.getMap();
+    const viewer = mapComponent ? mapComponent.getCesiumViewer() : undefined;
     this.eventManager
       .register({ event: CesiumEvent.LEFT_CLICK })
       .subscribe(async event => {
@@ -120,9 +201,21 @@ export class ViewpointComponent implements OnInit {
           }
         });
 
-        this.snackbar.open(
-          `Closest summit is ${closestSummit.properties.field_2}`
-        );
+        // this.snackbar.open(
+        //   `Closest summit is ${closestSummit.properties.field_2}`
+        // );
+
+        this.stateService.send(new ViewpointEventView());
       });
   }
+
+  ngOnDestroy() {
+    this.stateService.stop();
+  }
+
+  //#region UI Events
+  onExitClick() {
+    this.stateService.send(new ViewpointEventExplore());
+  }
+  //#endregion
 }

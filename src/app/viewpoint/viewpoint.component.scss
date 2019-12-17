@@ -1,0 +1,23 @@
+:host {
+  display: block;
+  position: relative;
+}
+
+button {
+  left: 16px;
+  position: absolute;
+  top: 16px;
+  z-index: 1;
+}
+
+mat-card {
+  height: 100px;
+  font-family: monospace;
+  font-size: 0.8rem;
+  right: 16px;
+  opacity: 0.8;
+  position: absolute;
+  top: 48px;
+  width: 200px;
+  z-index: 1;
+}

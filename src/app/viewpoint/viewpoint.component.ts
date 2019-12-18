@@ -57,6 +57,7 @@ type ViewpointContext = DefaultContext;
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ViewpointComponent implements OnInit, OnDestroy {
+  private readonly observerHeight = 1.6;
   private readonly stateMachine = Machine<
     ViewpointContext,
     ViewpointStateSchema,
@@ -133,10 +134,6 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     this.eventManager
       .register({ event: CesiumEvent.LEFT_CLICK })
       .subscribe(async event => {
-        console.log(event);
-        // const destination = this.coordinateConverter.screenToCartesian3(
-        //   event.movement.endPosition
-        // );
         const cartographicPosition = this.coordinateConverter.screenToCartographic(
           event.movement.endPosition
         );
@@ -148,52 +145,79 @@ export class ViewpointComponent implements OnInit, OnDestroy {
         )[0];
 
         // Add viewshed observer height
-        updatedCartographicPosition.height += 1.6;
+        updatedCartographicPosition.height += this.observerHeight;
 
         console.log('updatedCartographicPosition', updatedCartographicPosition);
 
-        const destination = Cesium.Cartographic.toCartesian(
+        const observer = Cesium.Cartographic.toCartesian(
           updatedCartographicPosition
         );
 
-        const summitPosition = new Cesium.Cartesian3();
-        const closestSummit = this.summits.features.reduce((acc, val) => {
-          return Cesium.Cartesian3.distanceSquared(
-            Cesium.Cartesian3.fromDegrees(
-              acc.geometry.coordinates[0],
-              acc.geometry.coordinates[1],
-              acc.properties.ALT,
+        let target = new Cesium.Cartesian3();
+        const summitsByClosestDistance: (GeoJsonFeature & {
+          distance: number;
+          cartesian: any;
+        })[] = this.summits.features
+          .map(feature => {
+            target = Cesium.Cartesian3.fromDegrees(
+              feature.geometry.coordinates[0],
+              feature.geometry.coordinates[1],
+              feature.properties.ALT,
               Cesium.Ellipsoid.WGS84,
-              summitPosition
-            ),
-            destination
-          ) <
-            Cesium.Cartesian3.distanceSquared(
-              Cesium.Cartesian3.fromDegrees(
-                val.geometry.coordinates[0],
-                val.geometry.coordinates[1],
-                val.properties.ALT,
-                Cesium.Ellipsoid.WGS84,
-                summitPosition
+              target
+            );
+            return {
+              ...feature,
+              distance: Cesium.Cartesian3.distanceSquared(target, observer),
+              cartesian: target
+            };
+          })
+          .sort((feature1, feature2) => feature1.distance - feature2.distance);
+
+        const direction = new Cesium.Cartesian3();
+        let closestVisibleSummit: GeoJsonFeature | undefined;
+        let i = 0;
+        while (
+          i < summitsByClosestDistance.length - 1 &&
+          !closestVisibleSummit
+        ) {
+          if (
+            !viewer.scene.globe.pick(
+              new Cesium.Ray(
+                observer,
+                Cesium.Cartesian3.subtract(
+                  summitsByClosestDistance[i].cartesian,
+                  observer,
+                  direction
+                )
               ),
-              destination
+              viewer.scene
             )
-            ? acc
-            : val;
-        });
+          ) {
+            closestVisibleSummit = summitsByClosestDistance[i];
+          }
+
+          i++;
+        }
+
+        if (!closestVisibleSummit) {
+          console.warn('No summit visible, falling back to closest');
+          closestVisibleSummit = summitsByClosestDistance[0];
+        }
 
         const bearing = this.coordinateConverter.bearingTo(
           updatedCartographicPosition,
           Cesium.Cartographic.fromDegrees(
-            closestSummit.geometry.coordinates[0],
-            closestSummit.geometry.coordinates[1]
+            closestVisibleSummit.geometry.coordinates[0],
+            closestVisibleSummit.geometry.coordinates[1]
           )
         );
 
-        console.log('closestSummit', closestSummit);
+        console.log('summitsByClosestDistance', summitsByClosestDistance);
+        console.log('closestVisibleSummit', closestVisibleSummit);
 
         this.cameraService.cameraFlyTo({
-          destination,
+          destination: observer,
           orientation: {
             heading: Cesium.Math.toRadians(bearing),
             pitch: 0,

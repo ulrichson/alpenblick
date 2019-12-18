@@ -1,7 +1,12 @@
-<button mat-mini-fab aria-label="Exit viewpoint" (click)="onExitClick()">
+<button
+  mat-mini-fab
+  aria-label="Exit viewpoint"
+  [disabled]="!(state.current$ | async)?.matches('viewing')"
+  (click)="onExitClick()"
+>
   <mat-icon>keyboard_backspace</mat-icon>
 </button>
 
 <mat-card
-  ><pre>{{ stateMachineService | async | json }}</pre></mat-card
+  ><pre>{{ state.current$ | async | json }}</pre></mat-card
 >

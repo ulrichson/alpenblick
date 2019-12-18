@@ -11,11 +11,12 @@ button {
 }
 
 mat-card {
-  height: 100px;
   font-family: monospace;
   font-size: 0.8rem;
+  max-height: 80vh;
+  opacity: 0.6;
   right: 16px;
-  opacity: 0.8;
+  overflow: auto;
   position: absolute;
   top: 48px;
   width: 200px;

@@ -319,20 +319,6 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     let closestSummitGeoJson: SummitGeoJsonFeature | undefined;
     let i = 0;
     while (i < summitsByClosestDistance.length - 1 && !closestSummitGeoJson) {
-      console.log(
-        'pick',
-        viewer.scene.globe.pick(
-          new Cesium.Ray(
-            position,
-            Cesium.Cartesian3.subtract(
-              summitsByClosestDistance[i].cartesian,
-              position,
-              direction
-            )
-          ),
-          viewer.scene
-        )
-      );
       if (
         !viewer.scene.globe.pick(
           new Cesium.Ray(

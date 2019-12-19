@@ -34,11 +34,11 @@ export class AppComponent {
       const imageryLayers = viewer.imageryLayers;
       if (imageryLayers.length > 0) {
         const layer = imageryLayers.get(0);
-        layer.brightness = 0.4;
-        layer.contrast = 1.2;
+        layer.brightness = 0.6;
+        layer.contrast = 1.1;
         layer.hue = 0;
         layer.saturation = 0.3;
-        layer.gamma = 0.8;
+        layer.gamma = 0.9;
       }
 
       // Austrian Alps Viewshed 100 km

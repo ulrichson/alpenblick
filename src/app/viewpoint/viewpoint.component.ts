@@ -444,7 +444,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
 
     const isViewBlocked = !closestSummitGeoJson;
     if (!closestSummitGeoJson) {
-      console.warn('No summit visible, falling back to closest');
+      console.warn('No summit visible, falling back to closest summit');
       closestSummitGeoJson = summitsByClosestDistance[0];
     }
 

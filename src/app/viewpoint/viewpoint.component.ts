@@ -20,6 +20,15 @@ import { takeUntil } from 'rxjs/operators';
 import { assign, interpret, Machine } from 'xstate';
 import { StateAccessor } from '../shared/state-accessor';
 
+interface CameraParameter {
+  position: any;
+  orientation: {
+    heading: number;
+    pitch: number;
+    roll: number;
+  };
+}
+
 //#region GeoJson
 interface GeoJsonFeature {
   type: 'Feature';
@@ -48,7 +57,7 @@ interface ViewpointStateSchema {
 class ViewpointEventView {
   type = 'VIEW';
 
-  constructor(public clickEvent: EventResult) {}
+  constructor(public clickEvent: EventResult, public camera: CameraParameter) {}
 }
 
 class ViewpointEventExplore {
@@ -58,15 +67,14 @@ class ViewpointEventExplore {
 type ViewpointEvent = ViewpointEventView | ViewpointEventExplore;
 
 interface ViewpointContext {
-  lastCamera?: any;
+  lastCamera?: CameraParameter;
   lastClickEvent?: EventResult;
 }
 //#endregion
 
 @Component({
   selector: 'app-viewpoint',
-  templateUrl: './viewpoint.component.html',
-  styleUrls: ['./viewpoint.component.scss'],
+  template: ``,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ViewpointComponent implements OnInit, OnDestroy {
@@ -87,6 +95,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
             VIEW: {
               target: 'checkingViewpoint',
               actions: assign({
+                lastCamera: (ctx, event: ViewpointEventView) => event.camera,
                 lastClickEvent: (ctx, event: ViewpointEventView) =>
                   event.clickEvent
               })
@@ -99,11 +108,9 @@ export class ViewpointComponent implements OnInit, OnDestroy {
             src: (ctx, event) => this.checkViewpoint(ctx, event),
             onDone: {
               target: 'viewing'
-              // actions: ['log']
             },
             onError: {
               target: 'exploring'
-              // actions: ['log']
             }
           }
         },
@@ -118,9 +125,6 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     },
     {
       actions: {
-        // log: (ctx, event) => {
-        //   console.log('    ACTION', ctx, event);
-        // },
         setViewpoint: (ctx, event) => {
           if (!ctx.lastClickEvent) {
             return;
@@ -129,7 +133,11 @@ export class ViewpointComponent implements OnInit, OnDestroy {
           this.setViewpoint(ctx.lastClickEvent);
         },
         restoreCamera: (ctx, event) => {
+          if (!ctx.lastCamera) {
+            return;
+          }
           console.log('should restore camera');
+          this.restoreCamera(ctx.lastCamera);
         }
       }
     }
@@ -290,11 +298,28 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       this.stateService.send(new ViewpointEventExplore());
     });
   }
+
+  restoreCamera(camera: CameraParameter) {
+    this.cameraService.cameraFlyTo({
+      destination: camera.position,
+      orientation: camera.orientation
+    });
+  }
   //#endregion
 
   //#region UI Events
   onMapClick(event: EventResult) {
-    this.stateService.send(new ViewpointEventView(event));
+    const camera = this.cameraService.getCamera();
+    this.stateService.send(
+      new ViewpointEventView(event, {
+        position: camera.position.clone(),
+        orientation: {
+          heading: camera.heading,
+          pitch: camera.pitch,
+          roll: camera.roll
+        }
+      })
+    );
   }
 
   onExitClick() {

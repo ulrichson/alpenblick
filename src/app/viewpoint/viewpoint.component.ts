@@ -223,7 +223,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     console.log('should check viewpoint location', ctx);
 
     if (!ctx.clickEvent) {
-      throw new TypeError('Context `lastClickEvent` is missing');
+      throw new TypeError('Context `clickEvent` is missing');
     }
 
     const mapComponent = this.mapsManagerService.getMap();
@@ -350,12 +350,12 @@ export class ViewpointComponent implements OnInit, OnDestroy {
 
   //#region XState Events
   private onRestoreCamera() {
-    return (ctx, event) => {
-      if (!ctx.lastCamera) {
-        throw new TypeError('Context `lastCamera` is missing');
+    return (ctx: ViewpointContext, event) => {
+      if (!ctx.cameraParameter) {
+        throw new TypeError('Context `cameraParameter` is missing');
       }
       console.log('should restore camera');
-      this.restoreCamera(ctx.lastCamera);
+      this.restoreCamera(ctx.cameraParameter);
     };
   }
 

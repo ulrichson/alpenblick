@@ -46,22 +46,33 @@ interface GeoJson {
 //#endregion
 
 //#region XState
+enum ViewpointStateName {
+  Exploring = 'exploring',
+  CheckingViewpoint = 'checkingViewpoint',
+  Viewing = 'viewing'
+}
+
+enum ViewpointEventName {
+  View = 'VIEW',
+  Explore = 'EXPLORE'
+}
+
 interface ViewpointStateSchema {
   states: {
-    exploring: {};
-    checkingViewpoint: {};
-    viewing: {};
+    [ViewpointStateName.Exploring]: {};
+    [ViewpointStateName.CheckingViewpoint]: {};
+    [ViewpointStateName.Viewing]: {};
   };
 }
 
 class ViewpointEventView {
-  type = 'VIEW';
+  type = ViewpointEventName.View;
 
   constructor(public clickEvent: EventResult, public camera: CameraParameter) {}
 }
 
 class ViewpointEventExplore {
-  type = 'EXPLORE';
+  type = ViewpointEventName.Explore;
 }
 
 type ViewpointEvent = ViewpointEventView | ViewpointEventExplore;
@@ -87,13 +98,13 @@ export class ViewpointComponent implements OnInit, OnDestroy {
   >(
     {
       id: 'viewpoint',
-      initial: 'exploring',
+      initial: ViewpointStateName.Exploring,
       context: {},
       states: {
         exploring: {
           on: {
             VIEW: {
-              target: 'checkingViewpoint',
+              target: ViewpointStateName.CheckingViewpoint,
               actions: assign({
                 lastCamera: (ctx, event: ViewpointEventView) => event.camera,
                 lastClickEvent: (ctx, event: ViewpointEventView) =>
@@ -107,10 +118,10 @@ export class ViewpointComponent implements OnInit, OnDestroy {
             id: 'checkViewpoint',
             src: (ctx, event) => this.checkViewpoint(ctx, event),
             onDone: {
-              target: 'viewing'
+              target: ViewpointStateName.Viewing
             },
             onError: {
-              target: 'exploring'
+              target: ViewpointStateName.Exploring
             }
           }
         },
@@ -118,7 +129,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
           entry: 'setViewpoint',
           exit: 'restoreCamera',
           on: {
-            EXPLORE: 'exploring'
+            EXPLORE: ViewpointStateName.Exploring
           }
         }
       }

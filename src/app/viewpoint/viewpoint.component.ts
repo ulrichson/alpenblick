@@ -57,6 +57,11 @@ enum ViewpointEventName {
   Explore = 'EXPLORE'
 }
 
+enum ViewpointActionName {
+  SetViewpoint = 'setViewpoint',
+  RestoreCamera = 'restoreCamera'
+}
+
 interface ViewpointStateSchema {
   states: {
     [ViewpointStateName.Exploring]: {};
@@ -80,12 +85,29 @@ type ViewpointEvent = ViewpointEventView | ViewpointEventExplore;
 interface ViewpointContext {
   lastCamera?: CameraParameter;
   lastClickEvent?: EventResult;
+  observer?: {
+    closestSummit: GeoJsonFeature;
+    position: any;
+    bearing: number;
+  };
 }
 //#endregion
 
 @Component({
   selector: 'app-viewpoint',
-  template: ``,
+  template: `
+    <mat-spinner
+      *ngIf="
+        (state.current$ | async)?.matches(ViewpointStateName.CheckingViewpoint)
+      "
+      [diameter]="48"
+      color="accent"
+    ></mat-spinner>
+  `,
+  styles: [
+    ':host { display: block; position: relative; }',
+    'mat-spinner { left: 16px; position: absolute; top: 16px; z-index: 1; }'
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ViewpointComponent implements OnInit, OnDestroy {
@@ -116,9 +138,12 @@ export class ViewpointComponent implements OnInit, OnDestroy {
         checkingViewpoint: {
           invoke: {
             id: 'checkViewpoint',
-            src: (ctx, event) => this.checkViewpoint(ctx, event),
+            src: (ctx, event) => this.checkViewpoint(ctx),
             onDone: {
-              target: ViewpointStateName.Viewing
+              target: ViewpointStateName.Viewing,
+              actions: assign({
+                observer: (ctx, event) => event.data
+              })
             },
             onError: {
               target: ViewpointStateName.Exploring
@@ -126,8 +151,8 @@ export class ViewpointComponent implements OnInit, OnDestroy {
           }
         },
         viewing: {
-          entry: 'setViewpoint',
-          exit: 'restoreCamera',
+          entry: ViewpointActionName.SetViewpoint,
+          exit: ViewpointActionName.RestoreCamera,
           on: {
             EXPLORE: ViewpointStateName.Exploring
           }
@@ -136,13 +161,15 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     },
     {
       actions: {
-        setViewpoint: this.onSetViewpoint(),
-        restoreCamera: this.onRestoreCamera()
+        [ViewpointActionName.SetViewpoint]: this.onSetViewpoint(),
+        [ViewpointActionName.RestoreCamera]: this.onRestoreCamera()
       }
     }
   );
   private summits: GeoJson;
   private unsubscribed$: Subject<void> = new Subject<void>();
+
+  public readonly ViewpointStateName = ViewpointStateName;
 
   public stateService = interpret(this.stateMachine)
     .onTransition(state => console.log('   TRANSITION: ' + state.value))
@@ -160,6 +187,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     private ngZone: NgZone
   ) {}
 
+  //#region Angular lifecycle hooks
   async ngOnInit() {
     this.summits = await this.http
       .get<GeoJson>('assets/alps_summits.geojson')
@@ -178,24 +206,23 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     this.unsubscribed$.next();
     this.unsubscribed$.complete();
   }
+  //#endregion
 
-  private checkViewpoint(ctx, event) {
-    console.log('should check viewpoint location', ctx, event);
-    return new Promise(resolve => {
-      resolve(event);
-    });
-  }
+  private async checkViewpoint(ctx: ViewpointContext) {
+    console.log('should check viewpoint location', ctx);
 
-  private async setViewpoint(event: EventResult) {
+    if (!ctx.lastClickEvent) {
+      throw new TypeError('Context `lastClickEvent` is missing');
+    }
+
     const mapComponent = this.mapsManagerService.getMap();
     const viewer = mapComponent ? mapComponent.getCesiumViewer() : undefined;
 
     if (!viewer) {
-      throw new Error('The Cesium `viewer` object is not available');
+      throw new TypeError('The Cesium `viewer` object is not available');
     }
-
     const cartographicPosition = this.coordinateConverter.screenToCartographic(
-      event.movement.endPosition
+      ctx.lastClickEvent.movement.endPosition
     );
 
     const updatedCartographicPosition = (
@@ -209,7 +236,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
 
     console.log('updatedCartographicPosition', updatedCartographicPosition);
 
-    const observer = Cesium.Cartographic.toCartesian(
+    const position = Cesium.Cartographic.toCartesian(
       updatedCartographicPosition
     );
 
@@ -228,55 +255,63 @@ export class ViewpointComponent implements OnInit, OnDestroy {
         );
         return {
           ...feature,
-          distance: Cesium.Cartesian3.distanceSquared(target, observer),
+          distance: Cesium.Cartesian3.distanceSquared(target, position),
           cartesian: target
         };
       })
       .sort((feature1, feature2) => feature1.distance - feature2.distance);
 
     const direction = new Cesium.Cartesian3();
-    let closestVisibleSummit: GeoJsonFeature | undefined;
+    let closestSummit: GeoJsonFeature | undefined;
     let i = 0;
-    while (i < summitsByClosestDistance.length - 1 && !closestVisibleSummit) {
+    while (i < summitsByClosestDistance.length - 1 && !closestSummit) {
       if (
         !viewer.scene.globe.pick(
           new Cesium.Ray(
-            observer,
+            position,
             Cesium.Cartesian3.subtract(
               summitsByClosestDistance[i].cartesian,
-              observer,
+              position,
               direction
             )
           ),
           viewer.scene
         )
       ) {
-        closestVisibleSummit = summitsByClosestDistance[i];
+        closestSummit = summitsByClosestDistance[i];
       }
 
       i++;
     }
 
-    if (!closestVisibleSummit) {
+    if (!closestSummit) {
       console.warn('No summit visible, falling back to closest');
-      closestVisibleSummit = summitsByClosestDistance[0];
+      closestSummit = summitsByClosestDistance[0];
     }
 
     const bearing = this.coordinateConverter.bearingTo(
       updatedCartographicPosition,
       Cesium.Cartographic.fromDegrees(
-        closestVisibleSummit.geometry.coordinates[0],
-        closestVisibleSummit.geometry.coordinates[1]
+        closestSummit.geometry.coordinates[0],
+        closestSummit.geometry.coordinates[1]
       )
     );
 
     console.log('summitsByClosestDistance', summitsByClosestDistance);
-    console.log('closestVisibleSummit', closestVisibleSummit);
+    console.log('closestVisibleSummit', closestSummit);
 
+    return { closestSummit, position, bearing };
+  }
+
+  private async setViewpoint(
+    summit: GeoJsonFeature,
+    observerPosition: any,
+    observerBearing: number
+  ) {
     this.cameraService.cameraFlyTo({
-      destination: observer,
+      destination: observerPosition,
       orientation: {
-        heading: Cesium.Math.toRadians(bearing),
+        heading: Cesium.Math.toRadians(observerBearing),
         pitch: 0,
         roll: 0
       }
@@ -286,9 +321,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     this.ngZone.run(async () => {
       const snackBarRef = this.snackbar.open(
         `Closest summit is ${
-          closestVisibleSummit
-            ? closestVisibleSummit.properties.field_2
-            : 'not available'
+          summit ? summit.properties.field_2 : 'not available'
         }`,
         'Exit'
       );
@@ -308,7 +341,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
   private onRestoreCamera() {
     return (ctx, event) => {
       if (!ctx.lastCamera) {
-        return;
+        throw new TypeError('Context `lastCamera` is missing');
       }
       console.log('should restore camera');
       this.restoreCamera(ctx.lastCamera);
@@ -316,12 +349,16 @@ export class ViewpointComponent implements OnInit, OnDestroy {
   }
 
   private onSetViewpoint() {
-    return (ctx, event) => {
-      if (!ctx.lastClickEvent) {
-        return;
+    return (ctx: ViewpointContext, event) => {
+      if (!ctx.observer) {
+        throw new TypeError('Context `observer` is missing');
       }
       console.log('should set viewpoint', ctx, event);
-      this.setViewpoint(ctx.lastClickEvent);
+      this.setViewpoint(
+        ctx.observer.closestSummit,
+        ctx.observer.position,
+        ctx.observer.bearing
+      );
     };
   }
   //#endregion

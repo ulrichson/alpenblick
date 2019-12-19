@@ -93,7 +93,9 @@ enum ViewpointEventName {
 
 enum ViewpointActionName {
   SetViewpoint = 'setViewpoint',
-  RestoreCamera = 'restoreCamera'
+  RestoreCamera = 'restoreCamera',
+  ShowPositionIndicator = 'showPositionIndicator',
+  HidePositionIndicator = 'hidePositionIndicator'
 }
 
 interface ViewpointStateSchema {
@@ -182,7 +184,11 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       context: {},
       states: {
         exploring: {
-          entry: ViewpointActionName.RestoreCamera,
+          entry: [
+            ViewpointActionName.RestoreCamera,
+            ViewpointActionName.ShowPositionIndicator
+          ],
+          exit: ViewpointActionName.HidePositionIndicator,
           on: {
             VIEW: {
               target: ViewpointStateName.CheckingViewpoint,
@@ -227,20 +233,32 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     {
       actions: {
         [ViewpointActionName.SetViewpoint]: this.onSetViewpoint(),
-        [ViewpointActionName.RestoreCamera]: this.onRestoreCamera()
+        [ViewpointActionName.RestoreCamera]: this.onRestoreCamera(),
+        [ViewpointActionName.ShowPositionIndicator]: this.onShowPositionIndicator(),
+        [ViewpointActionName.HidePositionIndicator]: this.onHidePositionIndicator()
       }
     }
   );
+
   private summits: GeoJson;
+
+  //#region Cesium
+  private viewer: any;
+  private currentPosition?: any;
+  private positionIndicator: any;
+  //#endregion
+
   private unsubscribed$: Subject<void> = new Subject<void>();
 
   public readonly ViewpointStateName = ViewpointStateName;
 
   public stateService = interpret(this.stateMachine)
-    .onTransition(state => console.log('   TRANSITION: ' + state.value))
+    // .onTransition(state => console.log('   TRANSITION: ' + state.value))
     .start();
 
   public state = new StateAccessor(this.stateService);
+
+  public Cesium = Cesium;
 
   constructor(
     private snackbar: MatSnackBar,
@@ -259,19 +277,97 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       .toPromise();
 
     // console.log('summits', this.summits);
+    const mapComponent = this.mapsManagerService.getMap();
+    this.viewer = mapComponent ? mapComponent.getCesiumViewer() : undefined;
+
+    if (!this.viewer) {
+      throw new TypeError('The Cesium `viewer` object is not available');
+    }
 
     this.eventManager
       .register({ event: CesiumEvent.LEFT_CLICK })
       .pipe(takeUntil(this.unsubscribed$))
       .subscribe(event => this.onMapClick(event));
+
+    this.eventManager
+      .register({ event: CesiumEvent.MOUSE_MOVE })
+      .pipe(takeUntil(this.unsubscribed$))
+      .subscribe(event => this.onMapMouseMove(event));
+
+    this.createPositionIndicator();
   }
 
   ngOnDestroy() {
     this.stateService.stop();
     this.unsubscribed$.next();
     this.unsubscribed$.complete();
+    this.destroyPositionIndicator();
   }
   //#endregion
+
+  private createPositionIndicator() {
+    const dynamicPosition = new Cesium.CallbackProperty(
+      () => this.currentPosition,
+      false
+    );
+
+    // Since `Ellipse` entity borders are not clamped to the ground we can
+    // fake the effect with a very very short corridor with rounded corners :)
+    let almostSamePosition: any;
+    const dynamicPositions = new Cesium.CallbackProperty(() => {
+      if (this.currentPosition) {
+        almostSamePosition = Cesium.Cartographic.fromCartesian(
+          this.currentPosition
+        );
+        almostSamePosition.latitude += 0.000001;
+        return [
+          this.currentPosition,
+          Cesium.Cartographic.toCartesian(
+            almostSamePosition,
+            Cesium.Ellipsoid.WGS84,
+            almostSamePosition
+          )
+        ];
+      }
+    }, false);
+
+    this.positionIndicator = this.viewer.entities.add({
+      id: `position-indicator`,
+      name: 'Position Indicator',
+      position: dynamicPosition,
+      point: {
+        color: Cesium.Color.WHITE,
+        pixelSize: 4,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 1
+      },
+      corridor: {
+        positions: dynamicPositions,
+        cornerType: Cesium.CornerType.ROUNDED,
+        width: 500.0,
+        material: Cesium.Color.WHITE.withAlpha(0.3)
+      },
+      label: {
+        text: 'Click to view from ground',
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        pixelOffset: { x: 0, y: -8 },
+        font: '16px sans-serif',
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        fillColor: Cesium.Color.WHITE.withAlpha(0.8),
+        outlineColor: Cesium.Color.BLACK.withAlpha(0.8),
+        outlineWidth: 4,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY // Avoid that label is clipped
+      }
+    });
+  }
+
+  private destroyPositionIndicator() {
+    if (this.positionIndicator) {
+      this.viewer.entities.remove(this.positionIndicator);
+    }
+  }
 
   private async checkViewpoint(
     ctx: ViewpointContext
@@ -280,17 +376,9 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       distanceSquared: number;
       cartesian: any;
     };
-    console.log('should check viewpoint location', ctx);
 
     if (!ctx.clickEvent) {
       throw new TypeError('Context `clickEvent` is missing');
-    }
-
-    const mapComponent = this.mapsManagerService.getMap();
-    const viewer = mapComponent ? mapComponent.getCesiumViewer() : undefined;
-
-    if (!viewer) {
-      throw new TypeError('The Cesium `viewer` object is not available');
     }
 
     const observerCartographicPosition = this.coordinateConverter.screenToCartographic(
@@ -298,18 +386,13 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     );
 
     const updatedObserverCartographicPosition = (
-      await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, [
+      await Cesium.sampleTerrainMostDetailed(this.viewer.terrainProvider, [
         observerCartographicPosition
       ])
     )[0];
 
     // Add viewshed observer height
     updatedObserverCartographicPosition.height += this.observerHeight; // + 30;
-
-    console.log(
-      'updatedCartographicPosition',
-      updatedObserverCartographicPosition
-    );
 
     const observerCartesianPosition = Cesium.Cartographic.toCartesian(
       updatedObserverCartographicPosition
@@ -348,9 +431,9 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       );
       Cesium.Cartesian3.normalize(direction, direction);
       if (
-        !viewer.scene.globe.pick(
+        !this.viewer.scene.globe.pick(
           new Cesium.Ray(observerCartesianPosition, direction),
-          viewer.scene
+          this.viewer.scene
         )
       ) {
         closestSummitGeoJson = summitsByClosestDistance[i];
@@ -471,7 +554,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
         // throw new TypeError('Context `cameraParameter` is missing');
         return;
       }
-      console.log('should restore camera');
+
       this.restoreCamera(ctx.cameraParameter);
     };
   }
@@ -481,12 +564,28 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       if (!ctx.observer) {
         throw new TypeError('Context `observer` is missing');
       }
-      console.log('should set viewpoint', ctx, event);
+
       this.setViewpoint(
         ctx.observer.closestSummit,
         ctx.observer.position,
         ctx.observer.bearing
       );
+    };
+  }
+
+  private onShowPositionIndicator() {
+    return (ctx: ViewpointContext, event) => {
+      if (this.positionIndicator) {
+        this.positionIndicator.show = true;
+      }
+    };
+  }
+
+  private onHidePositionIndicator() {
+    return (ctx: ViewpointContext, event) => {
+      if (this.positionIndicator) {
+        this.positionIndicator.show = false;
+      }
     };
   }
   //#endregion
@@ -505,5 +604,15 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       })
     );
   }
+
+  onMapMouseMove(event: EventResult) {
+    //   this.currentPosition = this.coordinateConverter.screenToCartesian3(
+    //     event.movement.endPosition
+    //   );
+    this.currentPosition = this.viewer.scene.pickPosition(
+      event.movement.endPosition
+    );
+  }
+
   //#endregion
 }

@@ -161,7 +161,15 @@ interface ViewpointContextObserver {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ViewpointComponent implements OnInit, OnDestroy {
+  /**
+   * Observer height on the ground (eyes)
+   */
   private readonly observerHeight = 1.6;
+
+  /**
+   * Elevate target height vertically (i.e. to compensate close interstion-with-terrain)
+   */
+  private readonly targetVerticalOffset = 5;
 
   private readonly stateMachine = Machine<
     ViewpointContext,
@@ -304,7 +312,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
         const target = Cesium.Cartesian3.fromDegrees(
           feature.geometry.coordinates[0],
           feature.geometry.coordinates[1],
-          feature.properties.ALT
+          feature.properties.ALT + this.targetVerticalOffset
         );
         return {
           ...feature,
@@ -352,7 +360,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     // DEBUG
     // const directionRay = Cesium.Cartesian3.multiplyByScalar(
     //   direction,
-    //   1000000,
+    //   100000,
     //   new Cesium.Cartesian3()
     // );
     // Cesium.Cartesian3.add(

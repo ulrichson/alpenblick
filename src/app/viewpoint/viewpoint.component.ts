@@ -8,6 +8,10 @@ import {
 } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
+  fadeInOnEnterAnimation,
+  fadeOutOnLeaveAnimation
+} from 'angular-animations';
+import {
   CameraService,
   CesiumEvent,
   CoordinateConverter,
@@ -111,6 +115,8 @@ interface ViewpointContext {
       *ngIf="
         (state.current$ | async)?.matches(ViewpointStateName.CheckingViewpoint)
       "
+      [@fadeInOnEnter]
+      [@fadeOutOnLeave]
       [diameter]="48"
       color="accent"
     ></mat-spinner>
@@ -119,6 +125,7 @@ interface ViewpointContext {
     ':host { display: block; position: relative; }',
     'mat-spinner { left: 16px; position: absolute; top: 16px; z-index: 1; }'
   ],
+  animations: [fadeInOnEnterAnimation(), fadeOutOnLeaveAnimation()],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ViewpointComponent implements OnInit, OnDestroy {

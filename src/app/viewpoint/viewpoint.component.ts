@@ -182,6 +182,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       context: {},
       states: {
         exploring: {
+          entry: ViewpointActionName.RestoreCamera,
           on: {
             VIEW: {
               target: ViewpointStateName.CheckingViewpoint,
@@ -210,9 +211,15 @@ export class ViewpointComponent implements OnInit, OnDestroy {
         },
         viewing: {
           entry: ViewpointActionName.SetViewpoint,
-          exit: ViewpointActionName.RestoreCamera,
+          // exit: ViewpointActionName.RestoreCamera,
           on: {
             EXPLORE: ViewpointStateName.Exploring
+            // VIEW: {
+            //   target: ViewpointStateName.CheckingViewpoint,
+            //   actions: assign({
+            //     clickEvent: (ctx, event: ViewpointEventView) => event.clickEvent
+            //   })
+            // }
           }
         }
       }
@@ -285,6 +292,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     if (!viewer) {
       throw new TypeError('The Cesium `viewer` object is not available');
     }
+
     const observerCartographicPosition = this.coordinateConverter.screenToCartographic(
       ctx.clickEvent.movement.endPosition
     );
@@ -460,7 +468,8 @@ export class ViewpointComponent implements OnInit, OnDestroy {
   private onRestoreCamera() {
     return (ctx: ViewpointContext, event) => {
       if (!ctx.cameraParameter) {
-        throw new TypeError('Context `cameraParameter` is missing');
+        // throw new TypeError('Context `cameraParameter` is missing');
+        return;
       }
       console.log('should restore camera');
       this.restoreCamera(ctx.cameraParameter);
@@ -495,10 +504,6 @@ export class ViewpointComponent implements OnInit, OnDestroy {
         }
       })
     );
-  }
-
-  onExitClick() {
-    this.stateService.send(new ViewpointEventExplore());
   }
   //#endregion
 }

@@ -299,16 +299,12 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       updatedObserverCartographicPosition
     );
 
-    let target = new Cesium.Cartesian3();
-
     const summitsByClosestDistance: SummitGeoJsonFeature[] = this.summits.features
       .map(feature => {
-        target = Cesium.Cartesian3.fromDegrees(
+        const target = Cesium.Cartesian3.fromDegrees(
           feature.geometry.coordinates[0],
           feature.geometry.coordinates[1],
-          feature.properties.ALT,
-          Cesium.Ellipsoid.WGS84,
-          target
+          feature.properties.ALT
         );
         return {
           ...feature,
@@ -324,20 +320,20 @@ export class ViewpointComponent implements OnInit, OnDestroy {
           feature1.distanceSquared - feature2.distanceSquared
       );
 
-    const direction = new Cesium.Cartesian3();
+    // Based on https://groups.google.com/forum/#!topic/cesium-dev/j5Qb_HZ0bIQ
+    let direction = new Cesium.Cartesian3();
     let closestSummitGeoJson: SummitGeoJsonFeature | undefined;
     let i = 0;
     while (i < summitsByClosestDistance.length - 1 && !closestSummitGeoJson) {
+      direction = Cesium.Cartesian3.subtract(
+        summitsByClosestDistance[i].cartesian,
+        observerCartesianPosition,
+        direction
+      );
+      Cesium.Cartesian3.normalize(direction, direction);
       if (
         !viewer.scene.globe.pick(
-          new Cesium.Ray(
-            observerCartesianPosition,
-            Cesium.Cartesian3.subtract(
-              observerCartesianPosition,
-              summitsByClosestDistance[i].cartesian,
-              direction
-            )
-          ),
+          new Cesium.Ray(observerCartesianPosition, direction),
           viewer.scene
         )
       ) {
@@ -352,6 +348,38 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       console.warn('No summit visible, falling back to closest');
       closestSummitGeoJson = summitsByClosestDistance[0];
     }
+
+    // DEBUG
+    // const directionRay = Cesium.Cartesian3.multiplyByScalar(
+    //   direction,
+    //   1000000,
+    //   new Cesium.Cartesian3()
+    // );
+    // Cesium.Cartesian3.add(
+    //   observerCartesianPosition,
+    //   directionRay,
+    //   directionRay
+    // );
+
+    // viewer.entities.add({
+    //   polyline: {
+    //     positions: [observerCartesianPosition, directionRay],
+    //     width: 5,
+    //     arcType: Cesium.ArcType.NONE
+    //   },
+    //   position: closestSummitGeoJson.cartesian,
+    //   point: {
+    //     color: Cesium.Color.GREENYELLOW,
+    //     pixelSize: 20,
+    //     outlineColor: Cesium.Color.WHITE,
+    //     outlineWidth: 2
+    //   },
+    //   label: {
+    //     text: 'Target',
+    //     pixelOffset: { x: 0, y: 20 },
+    //     verticalOrigin: Cesium.VerticalOrigin.TOP
+    //   }
+    // });
 
     const bearing = this.coordinateConverter.bearingTo(
       updatedObserverCartographicPosition,

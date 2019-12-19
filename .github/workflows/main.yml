@@ -8,8 +8,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
-      run: npm install
+    - name: Checkout
+      uses: actions/checkout@v1
+
     - name: Build
-      run: npm run build:prod
+      run: |
+        npm install
+        npm run build:prod
+
+    - name: Deploy
+      uses: JamesIves/github-pages-deploy-action@releases/v3
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BRANCH: gh-pages
+        FOLDER: dist

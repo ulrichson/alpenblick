@@ -48,15 +48,15 @@ export class AppComponent {
 
       viewer.zoomTo(imageryLayer);
 
-      const color = Cesium.Color.fromCssColorString('#ff00fb');
-      const dataSource = Cesium.GeoJsonDataSource.load(
-        'assets/alps_summits.geojson',
-        {
-          clampToGround: true,
-          fill: color
-        }
-      );
-      viewer.dataSources.add(dataSource);
+      // const color = Cesium.Color.fromCssColorString('#ff00fb');
+      // const dataSource = Cesium.GeoJsonDataSource.load(
+      //   'assets/alps_summits.geojson',
+      //   {
+      //     clampToGround: true,
+      //     fill: color
+      //   }
+      // );
+      // viewer.dataSources.add(dataSource);
     };
   }
 }

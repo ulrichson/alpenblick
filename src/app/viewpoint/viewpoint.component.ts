@@ -243,7 +243,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       .get<GeoJson>('assets/alps_summits.geojson')
       .toPromise();
 
-    console.log('summits', this.summits);
+    // console.log('summits', this.summits);
 
     this.eventManager
       .register({ event: CesiumEvent.LEFT_CLICK })

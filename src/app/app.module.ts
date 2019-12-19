@@ -12,10 +12,11 @@ import {
   AngularCesiumWidgetsModule
 } from 'angular-cesium';
 import { AppComponent } from './app.component';
+import { SummitsComponent } from './summits/summits.component';
 import { ViewpointComponent } from './viewpoint/viewpoint.component';
 
 @NgModule({
-  declarations: [AppComponent, ViewpointComponent],
+  declarations: [AppComponent, ViewpointComponent, SummitsComponent],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,

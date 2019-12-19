@@ -12,12 +12,18 @@ export class AppComponent {
     this.viewerConf.viewerOptions = {
       animation: false,
       // terrainShadows: Cesium.ShadowMode.ENABLED,
+      // terrainProvider: new Cesium.CesiumTerrainProvider({
+      //   url: 'assets/terrain',
+      //   credits:
+      //     'Digitales Geländemodell (DGM) Österreich by [Geoland.at](https://geoland.at/)'
+      // }),
       terrainProvider: Cesium.createWorldTerrain(),
       timeline: false,
       shadows: false
     };
 
     this.viewerConf.viewerModifier = viewer => {
+      // Imagery
       viewer.scene.highDynamicRange = true;
       viewer.scene.postProcessStages.fxaa.enabled = true;
       viewer.scene.fog.density = 8.0e-5;

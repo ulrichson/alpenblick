@@ -83,8 +83,19 @@ class ViewpointEventExplore {
 type ViewpointEvent = ViewpointEventView | ViewpointEventExplore;
 
 interface ViewpointContext {
-  lastCamera?: CameraParameter;
-  lastClickEvent?: EventResult;
+  /**
+   * The last camera parameter when exploring to restore view
+   */
+  cameraParameter?: CameraParameter;
+
+  /**
+   * Last map click event to set viewpoint
+   */
+  clickEvent?: EventResult;
+
+  /**
+   * Observer meta data
+   */
   observer?: {
     closestSummit: GeoJsonFeature;
     position: any;
@@ -128,9 +139,9 @@ export class ViewpointComponent implements OnInit, OnDestroy {
             VIEW: {
               target: ViewpointStateName.CheckingViewpoint,
               actions: assign({
-                lastCamera: (ctx, event: ViewpointEventView) => event.camera,
-                lastClickEvent: (ctx, event: ViewpointEventView) =>
-                  event.clickEvent
+                cameraParameter: (ctx, event: ViewpointEventView) =>
+                  event.camera,
+                clickEvent: (ctx, event: ViewpointEventView) => event.clickEvent
               })
             }
           }
@@ -211,7 +222,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
   private async checkViewpoint(ctx: ViewpointContext) {
     console.log('should check viewpoint location', ctx);
 
-    if (!ctx.lastClickEvent) {
+    if (!ctx.clickEvent) {
       throw new TypeError('Context `lastClickEvent` is missing');
     }
 
@@ -222,7 +233,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       throw new TypeError('The Cesium `viewer` object is not available');
     }
     const cartographicPosition = this.coordinateConverter.screenToCartographic(
-      ctx.lastClickEvent.movement.endPosition
+      ctx.clickEvent.movement.endPosition
     );
 
     const updatedCartographicPosition = (

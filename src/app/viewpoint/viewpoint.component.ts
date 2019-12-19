@@ -262,7 +262,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     ctx: ViewpointContext
   ): Promise<ViewpointContextObserver> {
     type SummitGeoJsonFeature = GeoJsonFeature & {
-      distance: number;
+      distanceSquared: number;
       cartesian: any;
     };
     console.log('should check viewpoint location', ctx);
@@ -277,23 +277,26 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     if (!viewer) {
       throw new TypeError('The Cesium `viewer` object is not available');
     }
-    const cartographicPosition = this.coordinateConverter.screenToCartographic(
+    const observerCartographicPosition = this.coordinateConverter.screenToCartographic(
       ctx.clickEvent.movement.endPosition
     );
 
-    const updatedCartographicPosition = (
+    const updatedObserverCartographicPosition = (
       await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, [
-        cartographicPosition
+        observerCartographicPosition
       ])
     )[0];
 
     // Add viewshed observer height
-    updatedCartographicPosition.height += this.observerHeight;
+    updatedObserverCartographicPosition.height += this.observerHeight; // + 30;
 
-    console.log('updatedCartographicPosition', updatedCartographicPosition);
+    console.log(
+      'updatedCartographicPosition',
+      updatedObserverCartographicPosition
+    );
 
-    const position = Cesium.Cartographic.toCartesian(
-      updatedCartographicPosition
+    const observerCartesianPosition = Cesium.Cartographic.toCartesian(
+      updatedObserverCartographicPosition
     );
 
     let target = new Cesium.Cartesian3();
@@ -309,11 +312,17 @@ export class ViewpointComponent implements OnInit, OnDestroy {
         );
         return {
           ...feature,
-          distance: Cesium.Cartesian3.distanceSquared(target, position),
+          distanceSquared: Cesium.Cartesian3.distanceSquared(
+            target,
+            observerCartesianPosition
+          ),
           cartesian: target
         };
       })
-      .sort((feature1, feature2) => feature1.distance - feature2.distance);
+      .sort(
+        (feature1, feature2) =>
+          feature1.distanceSquared - feature2.distanceSquared
+      );
 
     const direction = new Cesium.Cartesian3();
     let closestSummitGeoJson: SummitGeoJsonFeature | undefined;
@@ -322,10 +331,10 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       if (
         !viewer.scene.globe.pick(
           new Cesium.Ray(
-            position,
+            observerCartesianPosition,
             Cesium.Cartesian3.subtract(
+              observerCartesianPosition,
               summitsByClosestDistance[i].cartesian,
-              position,
               direction
             )
           ),
@@ -345,7 +354,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     }
 
     const bearing = this.coordinateConverter.bearingTo(
-      updatedCartographicPosition,
+      updatedObserverCartographicPosition,
       Cesium.Cartographic.fromDegrees(
         closestSummitGeoJson.geometry.coordinates[0],
         closestSummitGeoJson.geometry.coordinates[1]
@@ -358,7 +367,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     const closestSummit: ObserverSummit = {
       name: closestSummitGeoJson.properties.field_2,
       elevation: closestSummitGeoJson.properties.ALT,
-      distance: Math.sqrt(closestSummitGeoJson.distance),
+      distance: Math.sqrt(closestSummitGeoJson.distanceSquared),
       coordinates: {
         longitude: closestSummitGeoJson.geometry.coordinates[0],
         latitude: closestSummitGeoJson.geometry.coordinates[1]
@@ -366,7 +375,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       isViewBlocked
     };
 
-    return { closestSummit, position, bearing };
+    return { closestSummit, position: observerCartesianPosition, bearing };
   }
 
   private async setViewpoint(

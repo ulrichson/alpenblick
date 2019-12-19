@@ -136,20 +136,8 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     },
     {
       actions: {
-        setViewpoint: (ctx, event) => {
-          if (!ctx.lastClickEvent) {
-            return;
-          }
-          console.log('should set viewpoint', ctx, event);
-          this.setViewpoint(ctx.lastClickEvent);
-        },
-        restoreCamera: (ctx, event) => {
-          if (!ctx.lastCamera) {
-            return;
-          }
-          console.log('should restore camera');
-          this.restoreCamera(ctx.lastCamera);
-        }
+        setViewpoint: this.onSetViewpoint(),
+        restoreCamera: this.onRestoreCamera()
       }
     }
   );
@@ -191,7 +179,6 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     this.unsubscribed$.complete();
   }
 
-  //#region XState Services
   private checkViewpoint(ctx, event) {
     console.log('should check viewpoint location', ctx, event);
     return new Promise(resolve => {
@@ -199,7 +186,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     });
   }
 
-  async setViewpoint(event: EventResult) {
+  private async setViewpoint(event: EventResult) {
     const mapComponent = this.mapsManagerService.getMap();
     const viewer = mapComponent ? mapComponent.getCesiumViewer() : undefined;
 
@@ -310,11 +297,32 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     });
   }
 
-  restoreCamera(camera: CameraParameter) {
+  private restoreCamera(camera: CameraParameter) {
     this.cameraService.cameraFlyTo({
       destination: camera.position,
       orientation: camera.orientation
     });
+  }
+
+  //#region XState Events
+  private onRestoreCamera() {
+    return (ctx, event) => {
+      if (!ctx.lastCamera) {
+        return;
+      }
+      console.log('should restore camera');
+      this.restoreCamera(ctx.lastCamera);
+    };
+  }
+
+  private onSetViewpoint() {
+    return (ctx, event) => {
+      if (!ctx.lastClickEvent) {
+        return;
+      }
+      console.log('should set viewpoint', ctx, event);
+      this.setViewpoint(ctx.lastClickEvent);
+    };
   }
   //#endregion
 

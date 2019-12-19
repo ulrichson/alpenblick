@@ -41,7 +41,7 @@ export class SummitsComponent {
   public readonly translucencyByDistance = new Cesium.NearFarScalar(
     50000,
     1,
-    150000,
+    300000,
     0.2
   );
   public readonly scaleByDistance = new Cesium.NearFarScalar(
@@ -52,7 +52,7 @@ export class SummitsComponent {
   );
   public readonly distanceDisplayCondition = new Cesium.DistanceDisplayCondition(
     0,
-    150000
+    300000
   );
 
   private readonly markerVerticalOffset = 200;

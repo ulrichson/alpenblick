@@ -33,6 +33,36 @@ interface CameraParameter {
   };
 }
 
+interface ObserverSummit {
+  /**
+   * The summit name
+   */
+  name: string;
+
+  /**
+   * The summit coordinates in degrees
+   */
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+
+  /**
+   * The summit elevation in meter
+   */
+  elevation: number;
+
+  /**
+   * The summit distance from observer positin in meter
+   */
+  distance: number;
+
+  /**
+   * Determines whether view is blocked by terrain
+   */
+  isViewBlocked: boolean;
+}
+
 //#region GeoJson
 interface GeoJsonFeature {
   type: 'Feature';
@@ -100,11 +130,13 @@ interface ViewpointContext {
   /**
    * Observer meta data
    */
-  observer?: {
-    closestSummit: GeoJsonFeature;
-    position: any;
-    bearing: number;
-  };
+  observer?: ViewpointContextObserver;
+}
+
+interface ViewpointContextObserver {
+  closestSummit: ObserverSummit;
+  position: any;
+  bearing: number;
 }
 //#endregion
 
@@ -226,7 +258,13 @@ export class ViewpointComponent implements OnInit, OnDestroy {
   }
   //#endregion
 
-  private async checkViewpoint(ctx: ViewpointContext) {
+  private async checkViewpoint(
+    ctx: ViewpointContext
+  ): Promise<ViewpointContextObserver> {
+    type SummitGeoJsonFeature = GeoJsonFeature & {
+      distance: number;
+      cartesian: any;
+    };
     console.log('should check viewpoint location', ctx);
 
     if (!ctx.clickEvent) {
@@ -259,10 +297,8 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     );
 
     let target = new Cesium.Cartesian3();
-    const summitsByClosestDistance: (GeoJsonFeature & {
-      distance: number;
-      cartesian: any;
-    })[] = this.summits.features
+
+    const summitsByClosestDistance: SummitGeoJsonFeature[] = this.summits.features
       .map(feature => {
         target = Cesium.Cartesian3.fromDegrees(
           feature.geometry.coordinates[0],
@@ -280,9 +316,23 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       .sort((feature1, feature2) => feature1.distance - feature2.distance);
 
     const direction = new Cesium.Cartesian3();
-    let closestSummit: GeoJsonFeature | undefined;
+    let closestSummitGeoJson: SummitGeoJsonFeature | undefined;
     let i = 0;
-    while (i < summitsByClosestDistance.length - 1 && !closestSummit) {
+    while (i < summitsByClosestDistance.length - 1 && !closestSummitGeoJson) {
+      console.log(
+        'pick',
+        viewer.scene.globe.pick(
+          new Cesium.Ray(
+            position,
+            Cesium.Cartesian3.subtract(
+              summitsByClosestDistance[i].cartesian,
+              position,
+              direction
+            )
+          ),
+          viewer.scene
+        )
+      );
       if (
         !viewer.scene.globe.pick(
           new Cesium.Ray(
@@ -296,33 +346,45 @@ export class ViewpointComponent implements OnInit, OnDestroy {
           viewer.scene
         )
       ) {
-        closestSummit = summitsByClosestDistance[i];
+        closestSummitGeoJson = summitsByClosestDistance[i];
       }
 
       i++;
     }
 
-    if (!closestSummit) {
+    const isViewBlocked = !closestSummitGeoJson;
+    if (!closestSummitGeoJson) {
       console.warn('No summit visible, falling back to closest');
-      closestSummit = summitsByClosestDistance[0];
+      closestSummitGeoJson = summitsByClosestDistance[0];
     }
 
     const bearing = this.coordinateConverter.bearingTo(
       updatedCartographicPosition,
       Cesium.Cartographic.fromDegrees(
-        closestSummit.geometry.coordinates[0],
-        closestSummit.geometry.coordinates[1]
+        closestSummitGeoJson.geometry.coordinates[0],
+        closestSummitGeoJson.geometry.coordinates[1]
       )
     );
 
-    console.log('summitsByClosestDistance', summitsByClosestDistance);
-    console.log('closestVisibleSummit', closestSummit);
+    // console.log('summitsByClosestDistance', summitsByClosestDistance);
+    // console.log('closestVisibleSummit', closestSummitGeoJson);
+
+    const closestSummit: ObserverSummit = {
+      name: closestSummitGeoJson.properties.field_2,
+      elevation: closestSummitGeoJson.properties.ALT,
+      distance: Math.sqrt(closestSummitGeoJson.distance),
+      coordinates: {
+        longitude: closestSummitGeoJson.geometry.coordinates[0],
+        latitude: closestSummitGeoJson.geometry.coordinates[1]
+      },
+      isViewBlocked
+    };
 
     return { closestSummit, position, bearing };
   }
 
   private async setViewpoint(
-    summit: GeoJsonFeature,
+    summit: ObserverSummit,
     observerPosition: any,
     observerBearing: number
   ) {
@@ -339,7 +401,15 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     this.ngZone.run(async () => {
       const snackBarRef = this.snackbar.open(
         `Closest summit is ${
-          summit ? summit.properties.field_2 : 'not available'
+          summit
+            ? `${summit.name} (Elevation: ${Math.round(
+                summit.elevation
+              )}\u202Fm, Distance: ${(summit.distance / 1000).toFixed(
+                2
+              )}\u202Fkm)${
+                summit.isViewBlocked ? ' - visibility blocked by terrain' : ''
+              }`
+            : 'not available'
         }`,
         'Exit'
       );

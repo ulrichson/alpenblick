@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ViewerConfiguration } from 'angular-cesium';
+import { MatomoInjector, MatomoTracker } from 'ngx-matomo';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -7,8 +9,12 @@ import { ViewerConfiguration } from 'angular-cesium';
   styleUrls: ['./app.component.scss'],
   providers: [ViewerConfiguration]
 })
-export class AppComponent {
-  constructor(private viewerConf: ViewerConfiguration) {
+export class AppComponent implements OnInit {
+  constructor(
+    private viewerConf: ViewerConfiguration,
+    private matomoInjector: MatomoInjector,
+    private matomoTracker: MatomoTracker
+  ) {
     this.viewerConf.viewerOptions = {
       animation: false,
       // terrainShadows: Cesium.ShadowMode.ENABLED,
@@ -57,5 +63,12 @@ export class AppComponent {
       // );
       // viewer.dataSources.add(dataSource);
     };
+  }
+
+  ngOnInit() {
+    if (environment.matomo) {
+      this.matomoInjector.init(environment.matomo.url, environment.matomo.id);
+      this.matomoTracker.disableCookies();
+    }
   }
 }

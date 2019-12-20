@@ -11,6 +11,7 @@ import {
   AngularCesiumModule,
   AngularCesiumWidgetsModule
 } from 'angular-cesium';
+import { MatomoModule } from 'ngx-matomo';
 import { AppComponent } from './app.component';
 import { SummitsComponent } from './summits/summits.component';
 import { ViewpointComponent } from './viewpoint/viewpoint.component';
@@ -23,6 +24,7 @@ import { ViewpointComponent } from './viewpoint/viewpoint.component';
     AngularCesiumModule.forRoot(),
     AngularCesiumWidgetsModule,
     HttpClientModule,
+    MatomoModule,
     MatButtonModule,
     MatCardModule,
     MatIconModule,

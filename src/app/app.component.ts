@@ -25,7 +25,13 @@ export class AppComponent implements OnInit {
       // }),
       terrainProvider: Cesium.createWorldTerrain(),
       timeline: false,
-      shadows: false
+      shadows: false,
+      // baseLayerPicker: false, // There're rendering issues when this is included...very strange
+      homeButton: false,
+      selectionIndicator: false,
+      projectionPicker: false,
+      scene3DOnly: true,
+      requestRenderMode: true
     };
 
     this.viewerConf.viewerModifier = viewer => {

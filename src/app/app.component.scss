@@ -1,0 +1,12 @@
+::ng-deep {
+  // Cesium cosmetics
+  .cesium-viewer-bottom .cesium-widget-credits {
+    height: 100%;
+    display: flex;
+    align-items: center;
+
+    .cesium-credit-textContainer {
+      padding-left: 5px;
+    }
+  }
+}

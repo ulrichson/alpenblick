@@ -448,7 +448,7 @@ export class ViewpointComponent implements OnInit, OnDestroy {
       closestSummitGeoJson = summitsByClosestDistance[0];
     }
 
-    // DEBUG
+    //#region DEBUG
     // const directionRay = Cesium.Cartesian3.multiplyByScalar(
     //   direction,
     //   100000,
@@ -460,7 +460,17 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     //   directionRay
     // );
 
-    // viewer.entities.add({
+    // const rotationMatrix = Cesium.Transforms.rotationMatrixFromPositionVelocity(
+    //   observerCartesianPosition,
+    //   direction
+    // );
+    // const rot90 = Cesium.Matrix3.fromRotationY(Cesium.Math.toRadians(90));
+    // Cesium.Matrix3.multiply(rotationMatrix, rot90, rotationMatrix);
+    // const orientationQuaternion = Cesium.Quaternion.fromRotationMatrix(
+    //   rotationMatrix
+    // );
+
+    // this.viewer.entities.add({
     //   polyline: {
     //     positions: [observerCartesianPosition, directionRay],
     //     width: 5,
@@ -480,6 +490,33 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     //   }
     // });
 
+    // this.viewer.entities.add({
+    //   position: observerCartesianPosition,
+    //   point: {
+    //     color: Cesium.Color.LIGHTBLUE,
+    //     pixelSize: 20,
+    //     outlineColor: Cesium.Color.WHITE,
+    //     outlineWidth: 2
+    //   },
+    //   label: {
+    //     text: 'Origin',
+    //     pixelOffset: { x: 0, y: 20 },
+    //     verticalOrigin: Cesium.VerticalOrigin.TOP
+    //   }
+    // });
+
+    // this.viewer.entities.add({
+    //   position: observerCartesianPosition,
+    //   orientation: orientationQuaternion,
+    //   cylinder: {
+    //     length: 1000,
+    //     topRadius: 0,
+    //     bottomRadius: 300,
+    //     material: Cesium.Color.LIGHTBLUE.withAlpha(0.8)
+    //   }
+    // });
+    //#endregion
+
     const bearing = this.coordinateConverter.bearingTo(
       updatedObserverCartographicPosition,
       Cesium.Cartographic.fromDegrees(
@@ -487,9 +524,6 @@ export class ViewpointComponent implements OnInit, OnDestroy {
         closestSummitGeoJson.geometry.coordinates[1]
       )
     );
-
-    // console.log('summitsByClosestDistance', summitsByClosestDistance);
-    // console.log('closestVisibleSummit', closestSummitGeoJson);
 
     const closestSummit: ObserverSummit = {
       name: closestSummitGeoJson.properties.field_2,

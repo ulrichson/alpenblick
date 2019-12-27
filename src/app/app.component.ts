@@ -1,20 +1,75 @@
 import { Component, OnInit } from '@angular/core';
-import { ViewerConfiguration } from 'angular-cesium';
+import { MapTerrainProviderOptions, ViewerConfiguration } from 'angular-cesium';
 import { MatomoInjector, MatomoTracker } from 'ngx-matomo';
 import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-root',
-  templateUrl: './app.component.html',
+  template: `
+    <ac-map>
+      <!-- <ac-map-terrain-provider
+        [provider]="MapTerrainProviderOptions.WorldTerrain"
+      ></ac-map-terrain-provider> -->
+      <app-summits></app-summits>
+      <app-viewpoint></app-viewpoint>
+    </ac-map>
+  `,
   styleUrls: ['./app.component.scss'],
   providers: [ViewerConfiguration]
 })
 export class AppComponent implements OnInit {
+  MapTerrainProviderOptions = MapTerrainProviderOptions;
+
   constructor(
     private viewerConf: ViewerConfiguration,
     private matomoInjector: MatomoInjector,
     private matomoTracker: MatomoTracker
   ) {
+    const tarrainViewModels: any[] = [];
+    tarrainViewModels.push(
+      new Cesium.ProviderViewModel({
+        name: 'Cesium World Terrain',
+        iconUrl: Cesium.buildModuleUrl(
+          'Widgets/Images/TerrainProviders/CesiumWorldTerrain.png'
+        ),
+        tooltip:
+          'High-resolution global terrain tileset curated from several datasources and hosted by Cesium ion',
+        category: 'Cesium ion',
+        creationFunction: () => {
+          return Cesium.createWorldTerrain({
+            requestWaterMask: true,
+            requestVertexNormals: true
+          });
+        }
+      })
+    );
+
+    const imageryViewModels: any[] = [];
+    imageryViewModels.push(
+      new Cesium.ProviderViewModel({
+        name: 'Sentinel-2',
+        iconUrl: Cesium.buildModuleUrl(
+          'Widgets/Images/ImageryProviders/sentinel-2.png'
+        ),
+        tooltip: 'Sentinel-2 cloudless.',
+        creationFunction: () => {
+          return new Cesium.IonImageryProvider({ assetId: 3954 });
+        }
+      })
+    );
+
+    imageryViewModels.push(
+      new Cesium.ProviderViewModel({
+        name: 'Blue Marble',
+        iconUrl: Cesium.buildModuleUrl(
+          'Widgets/Images/ImageryProviders/blueMarble.png'
+        ),
+        tooltip: 'Blue Marble Next Generation July, 2004 imagery from NASA.',
+        creationFunction: () => {
+          return new Cesium.IonImageryProvider({ assetId: 3845 });
+        }
+      })
+    );
     this.viewerConf.viewerOptions = {
       animation: false,
       // terrainShadows: Cesium.ShadowMode.ENABLED,
@@ -23,7 +78,10 @@ export class AppComponent implements OnInit {
       //   credits:
       //     'Digitales Geländemodell (DGM) Österreich by [Geoland.at](https://geoland.at/)'
       // }),
-      terrainProvider: Cesium.createWorldTerrain(),
+      // imageryProvider: new Cesium.IonImageryProvider({ assetId: 3954 }),
+      terrainProviderViewModels: tarrainViewModels,
+      // terrainProvider: Cesium.createWorldTerrain(),
+      imageryProviderViewModels: imageryViewModels,
       timeline: false,
       shadows: false,
       // baseLayerPicker: false, // There're rendering issues when this is included...very strange
@@ -46,10 +104,10 @@ export class AppComponent implements OnInit {
       const imageryLayers = viewer.imageryLayers;
       if (imageryLayers.length > 0) {
         const layer = imageryLayers.get(0);
-        layer.brightness = 0.9;
-        layer.contrast = 1.1;
+        // layer.brightness = 0.9;
+        // layer.contrast = 1.1;
         layer.saturation = 0.3;
-        layer.gamma = 1.0;
+        // layer.gamma = 1.0;
       }
 
       // Austrian Alps Viewshed 100 km

@@ -25,6 +25,8 @@ export class AppComponent implements OnInit {
     private matomoInjector: MatomoInjector,
     private matomoTracker: MatomoTracker
   ) {
+    // tslint:disable-next-line: max-line-length
+    // See https://github.com/AnalyticalGraphicsInc/cesium/blob/master/Source/Widgets/BaseLayerPicker/createDefaultTerrainProviderViewModels.js
     const tarrainViewModels: any[] = [];
     tarrainViewModels.push(
       new Cesium.ProviderViewModel({
@@ -44,6 +46,8 @@ export class AppComponent implements OnInit {
       })
     );
 
+    // tslint:disable-next-line: max-line-length
+    // See https://github.com/AnalyticalGraphicsInc/cesium/blob/master/Source/Widgets/BaseLayerPicker/createDefaultImageryProviderViewModels.js
     const imageryViewModels: any[] = [];
     imageryViewModels.push(
       new Cesium.ProviderViewModel({
@@ -70,6 +74,23 @@ export class AppComponent implements OnInit {
         }
       })
     );
+
+    imageryViewModels.push(
+      new Cesium.ProviderViewModel({
+        name: 'Open\u00adStreet\u00adMap',
+        iconUrl: Cesium.buildModuleUrl(
+          'Widgets/Images/ImageryProviders/openStreetMap.png'
+        ),
+        tooltip:
+          'OpenStreetMap (OSM) is a collaborative project to create a free editable map of the world.\nhttp://www.openstreetmap.org',
+        creationFunction: () => {
+          return new Cesium.OpenStreetMapImageryProvider({
+            url: 'https://a.tile.openstreetmap.org/'
+          });
+        }
+      })
+    );
+
     this.viewerConf.viewerOptions = {
       animation: false,
       // terrainShadows: Cesium.ShadowMode.ENABLED,

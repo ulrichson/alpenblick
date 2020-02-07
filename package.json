@@ -23,12 +23,12 @@
     "@angular/platform-browser-dynamic": "~9.0.0",
     "@angular/router": "~9.0.0",
     "angular-animations": "0.0.10",
-    "angular-cesium": "0.0.63",
-    "cesium": "^1.65.0",
+    "angular-cesium": "0.0.64",
+    "cesium": "^1.66.0",
     "ngx-matomo": "^0.1.4",
     "rxjs": "~6.5.4",
     "tslib": "^1.10.0",
-    "xstate": "4.6.7",
+    "xstate": "^4.7.8",
     "zone.js": "~0.10.2"
   },
   "devDependencies": {

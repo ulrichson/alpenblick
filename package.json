@@ -28,7 +28,7 @@
     "ngx-matomo": "^0.1.4",
     "rxjs": "~6.5.4",
     "tslib": "^1.10.0",
-    "xstate": "^4.7.8",
+    "xstate": "^4.8.0",
     "zone.js": "~0.10.2"
   },
   "devDependencies": {

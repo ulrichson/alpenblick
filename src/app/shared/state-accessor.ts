@@ -9,6 +9,10 @@ import {
 
 /**
  * Utility class to access _XState_ current state
+ *
+ * @deprecated
+ *
+ * Use the natice _XState_ service instead: {@link https://xstate.js.org/docs/recipes/rxjs.html}
  */
 export class StateAccessor<
   TContext = DefaultContext,

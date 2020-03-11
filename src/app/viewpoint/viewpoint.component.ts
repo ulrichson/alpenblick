@@ -19,10 +19,9 @@ import {
   MapEventsManagerService,
   MapsManagerService
 } from 'angular-cesium';
-import { Subject } from 'rxjs';
+import { from, Subject, Subscribable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { assign, interpret, Machine } from 'xstate';
-import { StateAccessor } from '../shared/state-accessor';
+import { assign, interpret, Machine, State } from 'xstate';
 
 interface CameraParameter {
   position: any;
@@ -146,9 +145,7 @@ interface ViewpointContextObserver {
   selector: 'app-viewpoint',
   template: `
     <mat-spinner
-      *ngIf="
-        (state.current$ | async)?.matches(ViewpointStateName.CheckingViewpoint)
-      "
+      *ngIf="(state$ | async)?.matches(ViewpointStateName.CheckingViewpoint)"
       [@fadeInOnEnter]
       [@fadeOutOnLeave]
       [diameter]="48"
@@ -256,7 +253,15 @@ export class ViewpointComponent implements OnInit, OnDestroy {
     // .onTransition(state => console.log('   TRANSITION: ' + state.value))
     .start();
 
-  public state = new StateAccessor(this.stateService);
+  /**
+   * Observable state
+   *
+   * @remarks
+   * TODO: check if it can be used with type inference (i.e. w/o the cast, see {@link https://xstate.js.org/docs/recipes/rxjs.html})
+   */
+  public state$ = from(
+    this.stateService as Subscribable<State<ViewpointContext>>
+  );
 
   public Cesium = Cesium;
 

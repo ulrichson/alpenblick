@@ -24,11 +24,11 @@
     "@angular/router": "~9.1.2",
     "angular-animations": "0.0.10",
     "angular-cesium": "0.0.65",
-    "cesium": "^1.67.0",
+    "cesium": "^1.68.0",
     "ngx-matomo": "^0.1.4",
     "rxjs": "~6.5.5",
     "tslib": "^1.10.0",
-    "xstate": "^4.8.0",
+    "xstate": "^4.9.0",
     "zone.js": "~0.10.3"
   },
   "devDependencies": {
@@ -50,6 +50,6 @@
     "protractor": "~5.4.0",
     "ts-node": "~7.0.0",
     "tslint": "~5.15.0",
-    "typescript": "~3.7.5"
+    "typescript": "~3.8.3"
   }
 }

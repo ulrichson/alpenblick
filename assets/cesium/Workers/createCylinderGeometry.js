@@ -1,1 +1,23 @@
-define(["./when-c2e8ef35","./Check-c4f3a3fc","./Math-d30358ed","./Cartesian2-e875d9d2","./Transforms-44592b02","./RuntimeError-6122571f","./WebGLConstants-4ae0db90","./ComponentDatatype-5d3f6452","./GeometryAttribute-4098b8de","./GeometryAttributes-57608efc","./IndexDatatype-e3260434","./GeometryOffsetAttribute-e6e9672c","./VertexFormat-ad523db1","./CylinderGeometryLibrary-95411284","./CylinderGeometry-a21e5e5a"],function(r,e,t,n,a,d,o,i,y,f,m,c,u,b,s){"use strict";return function(e,t){return r.defined(t)&&(e=s.CylinderGeometry.unpack(e,t)),s.CylinderGeometry.createGeometry(e)}});
+/**
+ * Cesium - https://github.com/AnalyticalGraphicsInc/cesium
+ *
+ * Copyright 2011-2017 Cesium Contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Columbus View (Pat. Pend.)
+ *
+ * Portions licensed separately.
+ * See https://github.com/AnalyticalGraphicsInc/cesium/blob/master/LICENSE.md for full licensing details.
+ */
+define(["./defined-2a4f2d00","./Check-e5651467","./freezeObject-a51e076f","./defaultValue-29c9b1af","./Math-7782f09e","./Cartesian2-ba70b51f","./defineProperties-c817531e","./Transforms-7d72c08c","./RuntimeError-51c34ab4","./WebGLConstants-90dbfe2f","./ComponentDatatype-418b1c61","./GeometryAttribute-75811f09","./when-1faa3867","./GeometryAttributes-f8548d3f","./IndexDatatype-2bcfc06b","./GeometryOffsetAttribute-fa4e7a11","./VertexFormat-e2e35139","./CylinderGeometryLibrary-f35c6b75","./CylinderGeometry-779b874e"],function(r,e,t,f,a,n,i,o,b,c,d,y,m,u,s,G,C,l,p){"use strict";return function(e,t){return r.defined(t)&&(e=p.CylinderGeometry.unpack(e,t)),p.CylinderGeometry.createGeometry(e)}});

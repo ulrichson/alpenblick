@@ -12,7 +12,7 @@ import {
  *
  * @deprecated
  *
- * Use the natice _XState_ service instead: {@link https://xstate.js.org/docs/recipes/rxjs.html}
+ * Use the native _XState_ service instead: {@link https://xstate.js.org/docs/recipes/rxjs.html}
  */
 export class StateAccessor<
   TContext = DefaultContext,

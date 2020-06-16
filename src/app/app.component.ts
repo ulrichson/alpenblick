@@ -117,7 +117,7 @@ export class AppComponent implements OnInit {
       // Imagery
       viewer.scene.highDynamicRange = true;
       viewer.scene.postProcessStages.fxaa.enabled = true;
-      viewer.scene.fog.density = 8.0e-5;
+      viewer.scene.fog.density = 0.0001;
       viewer.scene.skyAtmosphere.hueShift = -0.08;
       viewer.scene.skyAtmosphere.saturationShift = -0.3;
       viewer.scene.skyAtmosphere.brightnessShift = -0.2;
@@ -125,9 +125,9 @@ export class AppComponent implements OnInit {
       const imageryLayers = viewer.imageryLayers;
       if (imageryLayers.length > 0) {
         const layer = imageryLayers.get(0);
-        // layer.brightness = 0.9;
+        layer.brightness = 1.9;
         // layer.contrast = 1.1;
-        layer.saturation = 0.3;
+        layer.saturation = 0.4;
         // layer.gamma = 1.0;
       }
 

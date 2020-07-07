@@ -24,11 +24,11 @@
     "@angular/router": "~9.1.11",
     "angular-animations": "0.0.10",
     "angular-cesium": "0.0.66",
-    "cesium": "^1.70.1",
+    "cesium": "^1.71.0",
     "ngx-matomo": "^0.1.4",
     "rxjs": "~6.5.5",
     "tslib": "^1.10.0",
-    "xstate": "^4.10.0",
+    "xstate": "^4.11.0",
     "zone.js": "~0.10.3"
   },
   "devDependencies": {

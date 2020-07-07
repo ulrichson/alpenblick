@@ -115,9 +115,9 @@ export class AppComponent implements OnInit {
 
     this.viewerConf.viewerModifier = viewer => {
       // Imagery
-      viewer.scene.highDynamicRange = true;
+      viewer.scene.highDynamicRange = false;
       viewer.scene.postProcessStages.fxaa.enabled = true;
-      viewer.scene.fog.density = 0.0001;
+      viewer.scene.fog.density = 0.00006;
       viewer.scene.skyAtmosphere.hueShift = -0.08;
       viewer.scene.skyAtmosphere.saturationShift = -0.3;
       viewer.scene.skyAtmosphere.brightnessShift = -0.2;
@@ -125,15 +125,15 @@ export class AppComponent implements OnInit {
       const imageryLayers = viewer.imageryLayers;
       if (imageryLayers.length > 0) {
         const layer = imageryLayers.get(0);
-        layer.brightness = 1.9;
-        // layer.contrast = 1.1;
-        layer.saturation = 0.4;
+        layer.brightness = 0.95;
+        layer.contrast = 1.05;
+        layer.saturation = 0.3;
         // layer.gamma = 1.0;
       }
 
       // Austrian Alps Viewshed 100 km
       const imageryLayer = viewer.imageryLayers.addImageryProvider(
-        new Cesium.IonImageryProvider({ assetId: 61602 })
+        new Cesium.IonImageryProvider({ assetId: 121090 })
       );
 
       viewer.zoomTo(imageryLayer);

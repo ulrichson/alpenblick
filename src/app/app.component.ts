@@ -147,6 +147,8 @@ export class AppComponent implements OnInit {
       //   }
       // );
       // viewer.dataSources.add(dataSource);
+
+      viewer.scene.frameState.creditDisplay.addDefaultCredit(new Cesium.Credit('<a href="https://inspirespace.co/imprint/" target="_blank">Imprint</a>'))
     };
   }
 
